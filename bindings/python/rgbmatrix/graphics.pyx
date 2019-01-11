@@ -43,6 +43,9 @@ cdef class Font:
 def DrawText(core.Canvas c, Font f, int x, int y, Color color, text):
     return cppinc.DrawText(c.__getCanvas(), f.__font, x, y, color.__color, text.encode('utf-8'))
 
+def VerticalDrawText(core.Canvas c, Font f, int x, int y, Color color, text, int extra_spacing=0):
+    return cppinc.VerticalDrawText(c.__getCanvas(), f.__font, x, y, color.__color, NULL, text.encode('utf-8'), extra_spacing)
+
 def DrawCircle(core.Canvas c, int x, int y, int r, Color color):
     cppinc.DrawCircle(c.__getCanvas(), x, y, r, color.__color)
 

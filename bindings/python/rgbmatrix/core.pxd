@@ -1,4 +1,9 @@
 cimport cppinc
+from libc.stdint cimport uint32_t
+
+cdef class GPIO:
+    cdef cppinc.GPIO *gpio(self) except +
+    cdef uint32_t RequestInputs(self, uint32_t inputs)
 
 cdef class Canvas:
     cdef cppinc.Canvas *__getCanvas(self) except +
@@ -8,6 +13,7 @@ cdef class FrameCanvas(Canvas):
 
 cdef class RGBMatrix(Canvas):
     cdef cppinc.RGBMatrix *__matrix
+    cdef cppinc.GPIO *gpio(self)
 
 cdef class RGBMatrixOptions:
     cdef cppinc.Options __options

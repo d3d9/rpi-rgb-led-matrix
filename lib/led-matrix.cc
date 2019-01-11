@@ -263,7 +263,7 @@ RGBMatrix::RGBMatrix(GPIO *io, const Options &options)
   }
 
   Framebuffer::InitHardwareMapping(params_.hardware_mapping);
-  active_ = CreateFrameCanvas();
+  active_ = CreateFrameCanvas(params_.pixelsvector);
   Clear();
   SetGPIO(io, true);
 
@@ -276,14 +276,14 @@ RGBMatrix::RGBMatrix(GPIO *io, const Options &options)
 }
 
 RGBMatrix::RGBMatrix(GPIO *io, int rows, int chained_displays,
-                     int parallel_displays)
+                     int parallel_displays, bool pixelsvector)
   : params_(Options()), io_(NULL), updater_(NULL), shared_pixel_mapper_(NULL) {
   params_.rows = rows;
   params_.chain_length = chained_displays;
   params_.parallel = parallel_displays;
   assert(params_.Validate(NULL));
   Framebuffer::InitHardwareMapping(params_.hardware_mapping);
-  active_ = CreateFrameCanvas();
+  active_ = CreateFrameCanvas(pixelsvector);
   Clear();
   SetGPIO(io, true);
 }
@@ -359,7 +359,9 @@ bool RGBMatrix::StartRefresh() {
   return updater_ != NULL;
 }
 
-FrameCanvas *RGBMatrix::CreateFrameCanvas() {
+FrameCanvas *RGBMatrix::CreateFrameCanvas() { return CreateFrameCanvas(0); }
+
+FrameCanvas *RGBMatrix::CreateFrameCanvas(bool pixelsvector) {
   FrameCanvas *result =
     new FrameCanvas(new Framebuffer(params_.rows,
                                     params_.cols * params_.chain_length,
@@ -367,7 +369,8 @@ FrameCanvas *RGBMatrix::CreateFrameCanvas() {
                                     params_.scan_mode,
                                     params_.led_rgb_sequence,
                                     params_.inverse_colors,
-                                    &shared_pixel_mapper_));
+                                    &shared_pixel_mapper_),
+                    pixelsvector=pixelsvector);
   if (created_frames_.empty()) {
     // First time. Get defaults from initial Framebuffer.
     do_luminance_correct_ = result->framebuffer()->luminance_correct();
@@ -552,15 +555,39 @@ void RGBMatrix::ApplyStaticTransformerDeprecated(
 #endif  // REMOVE_DEPRECATED_TRANSFORMERS
 
 // FrameCanvas implementation of Canvas
-FrameCanvas::~FrameCanvas() { delete frame_; }
+FrameCanvas::~FrameCanvas() {
+  if (pixelsvector) {
+    pixels.clear();
+  }
+  delete frame_;
+}
 int FrameCanvas::width() const { return frame_->width(); }
 int FrameCanvas::height() const { return frame_->height(); }
 void FrameCanvas::SetPixel(int x, int y,
                          uint8_t red, uint8_t green, uint8_t blue) {
+  if (pixelsvector && x >= 0 && y >= 0 && y < height() && x < width())
+    pixels[width()*y + x] = std::make_shared<RGBints>(red, green, blue);
   frame_->SetPixel(x, y, red, green, blue);
 }
-void FrameCanvas::Clear() { return frame_->Clear(); }
+std::string FrameCanvas::ppm() {
+	if (!pixelsvector) return std::string();
+	std::string r = "P6\n" + std::to_string(width()) + " " + std::to_string(height()) + "\n255\n";
+	r.reserve(15+width()*height()*3);
+	for (int i=0; i<width()*height(); i++){
+		r.append(reinterpret_cast<char*>(pixels[i].get()), 3);
+	}
+	return r;
+}
+void FrameCanvas::Clear() {
+  if (pixelsvector) {
+    pixels.assign(width()*height(), std::make_shared<RGBints>());
+  }
+  return frame_->Clear();
+}
 void FrameCanvas::Fill(uint8_t red, uint8_t green, uint8_t blue) {
+  if (pixelsvector) {
+    pixels.assign(width()*height(), std::make_shared<RGBints>(red, green, blue));
+  }
   frame_->Fill(red, green, blue);
 }
 bool FrameCanvas::SetPWMBits(uint8_t value) { return frame_->SetPWMBits(value); }

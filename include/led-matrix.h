@@ -22,12 +22,14 @@
 
 #include <stdint.h>
 #include <string>
+#include <memory>
 #include <vector>
 
 #include "gpio.h"
 #include "canvas.h"
 #include "thread.h"
 #include "pixel-mapper.h"
+#include "../lib/framebuffer-internal.h"
 
 namespace rgb_matrix {
 class RGBMatrix;
@@ -144,6 +146,9 @@ public:
     // to this matrix. A semicolon-separated list of pixel-mappers with optional
     // parameter.
     const char *pixel_mapper_config;   // Flag: --led-pixel-mapper
+
+    // save set pixels in a vector, access via framecanvas.ppm()
+    bool pixelsvector;
   };
 
   // Create an RGBMatrix.
@@ -164,7 +169,7 @@ public:
   // Simple constructor if you don't need the fine-control with the
   // Options object.
   RGBMatrix(GPIO *io, int rows = 32, int chained_displays = 1,
-            int parallel_displays = 1);
+            int parallel_displays = 1, bool pixelsvector = 0);
 
   virtual ~RGBMatrix();
 
@@ -268,6 +273,7 @@ public:
   // The ownership of the created Canvases remains with the RGBMatrix, so you
   // don't have to worry about deleting them.
   FrameCanvas *CreateFrameCanvas();
+  FrameCanvas *CreateFrameCanvas(bool pixelsvector);
 
   // This method waits to the next VSync and swaps the active buffer with the
   // supplied buffer. The formerly active buffer is returned.
@@ -338,6 +344,12 @@ private:
   internal::PixelDesignatorMap *shared_pixel_mapper_;
 };
 
+struct RGBints {
+  uint8_t r, g, b;
+  RGBints() { r=0; g=0; b=0;}
+  RGBints(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b) {}
+};
+
 class FrameCanvas : public Canvas {
 public:
   // Set PWM bits used for this Frame.
@@ -386,10 +398,18 @@ public:
   virtual void Clear();
   virtual void Fill(uint8_t red, uint8_t green, uint8_t blue);
 
+  std::string ppm();
+  std::vector<std::shared_ptr<RGBints>> pixels;
+
 private:
   friend class RGBMatrix;
 
-  FrameCanvas(internal::Framebuffer *frame) : frame_(frame){}
+  bool pixelsvector;
+  FrameCanvas(internal::Framebuffer *frame, bool pixelsvector=0) : pixelsvector(pixelsvector), frame_(frame) {
+	if (pixelsvector){
+		pixels.assign(frame_->width()*frame_->height(), std::make_shared<RGBints>());
+	}
+  }
   virtual ~FrameCanvas();   // Any FrameCanvas is owned by RGBMatrix.
   internal::Framebuffer *framebuffer() { return frame_; }
 

@@ -1,9 +1,15 @@
 from libcpp cimport bool
+from libcpp.string cimport string
 from libc.stdint cimport uint8_t, uint32_t
 
 ########################
 ### External classes ###
 ########################
+
+cdef extern from "gpio.h" namespace "rgb_matrix":
+    cdef cppclass GPIO:
+        GPIO* gpio(self) except +
+        uint32_t RequestInputs(uint32_t)
 
 cdef extern from "canvas.h" namespace "rgb_matrix":
     cdef cppclass Canvas:
@@ -21,14 +27,17 @@ cdef extern from "led-matrix.h" namespace "rgb_matrix":
         bool luminance_correct()
         void SetBrightness(uint8_t)
         uint8_t brightness()
-        FrameCanvas *CreateFrameCanvas()
+        FrameCanvas *CreateFrameCanvas(bool)
         FrameCanvas *SwapOnVSync(FrameCanvas*)
+        GPIO* gpio()
+        uint32_t AwaitInputChange(int)
 
     cdef cppclass FrameCanvas(Canvas):
         bool SetPWMBits(uint8_t)
         uint8_t pwmbits()
         void SetBrightness(uint8_t)
         uint8_t brightness()
+        string ppm() nogil
 
     struct RuntimeOptions:
       RuntimeOptions() except +
@@ -65,6 +74,8 @@ cdef extern from "led-matrix.h" namespace "rgb_matrix::RGBMatrix":
         const char *led_rgb_sequence
         const char *pixel_mapper_config
 
+        bool pixelsvector
+
 cdef extern from "graphics.h" namespace "rgb_matrix":
     cdef struct Color:
         Color(uint8_t, uint8_t, uint8_t) except +
@@ -81,5 +92,6 @@ cdef extern from "graphics.h" namespace "rgb_matrix":
         int DrawGlyph(Canvas*, int, int, const Color, uint32_t);
 
     cdef int DrawText(Canvas*, const Font, int, int, const Color, const char*)
+    cdef int VerticalDrawText(Canvas*, const Font, int, int, const Color, const Color*, const char*, int)
     cdef void DrawCircle(Canvas*, int, int, int, const Color)
     cdef void DrawLine(Canvas*, int, int, int, int, const Color)
