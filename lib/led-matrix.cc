@@ -570,13 +570,23 @@ void FrameCanvas::SetPixel(int x, int y,
   frame_->SetPixel(x, y, red, green, blue);
 }
 std::string FrameCanvas::ppm() {
-	if (!pixelsvector) return std::string();
-	std::string r = "P6\n" + std::to_string(width()) + " " + std::to_string(height()) + "\n255\n";
-	r.reserve(15+width()*height()*3);
-	for (int i=0; i<width()*height(); i++){
-		r.append(reinterpret_cast<char*>(pixels[i].get()), 3);
-	}
-	return r;
+  if (!pixelsvector) return std::string();
+  std::string r = "P6\n" + std::to_string(width()) + " " + std::to_string(height()) + "\n255\n";
+  r.reserve(15+width()*height()*3);
+  for (int i=0; i<width()*height(); i++){
+    r.append(reinterpret_cast<char*>(pixels[i].get()), 3);
+  }
+  return r;
+}
+bool FrameCanvas::ppm(const char* path) {
+  if (!path || !*path) return 0;
+  std::string ppms = ppm();
+  if (ppms.empty()) return 0;
+  FILE *f = fopen(path, "wb");
+  if (f == NULL) return 0;
+  fwrite(ppms.c_str(), sizeof(char), ppms.size(), f);
+  fclose(f);
+  return 1;
 }
 void FrameCanvas::Clear() {
   if (pixelsvector) {

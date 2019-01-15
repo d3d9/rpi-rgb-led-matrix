@@ -38,6 +38,7 @@ cdef extern from "led-matrix.h" namespace "rgb_matrix":
         void SetBrightness(uint8_t)
         uint8_t brightness()
         string ppm() nogil
+        bool ppm(const char*)
 
     struct RuntimeOptions:
       RuntimeOptions() except +

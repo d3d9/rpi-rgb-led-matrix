@@ -399,6 +399,7 @@ public:
   virtual void Fill(uint8_t red, uint8_t green, uint8_t blue);
 
   std::string ppm();
+  bool ppm(const char *path);
   std::vector<std::shared_ptr<RGBints>> pixels;
 
 private:

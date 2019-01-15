@@ -78,8 +78,12 @@ cdef class FrameCanvas(Canvas):
     def Clear(self):
         (<cppinc.FrameCanvas*>self.__getCanvas()).Clear()
 
-    def ppm(self):
-        return (<cppinc.FrameCanvas*>self.__getCanvas()).ppm()
+    def ppm(self, filename=None):
+        if filename:
+            if not (<cppinc.FrameCanvas*>self.__getCanvas()).ppm(filename.encode('utf-8')):
+                raise Exception("Couldn't write ppm to " + filename)
+        else:
+            return (<cppinc.FrameCanvas*>self.__getCanvas()).ppm()
 
     def SetPixel(self, int x, int y, uint8_t red, uint8_t green, uint8_t blue):
         (<cppinc.FrameCanvas*>self.__getCanvas()).SetPixel(x, y, red, green, blue)
