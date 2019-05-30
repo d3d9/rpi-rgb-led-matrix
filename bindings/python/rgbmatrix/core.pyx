@@ -184,6 +184,11 @@ cdef class RGBMatrixOptions:
         def __get__(self): return self.__options.pixelsvector
         def __set__(self, value): self.__options.pixelsvector = value
 
+    property pwm_dither_bits:
+        def __get__(self): return self.__options.pwm_dither_bits
+        def __set__(self, uint8_t value): self.__options.pwm_dither_bits = value
+
+
     # RuntimeOptions properties
 
     property gpio_slowdown:
@@ -197,7 +202,6 @@ cdef class RGBMatrixOptions:
     property drop_privileges:
         def __get__(self): return self.__runtime_options.drop_privileges
         def __set__(self, uint8_t value): self.__runtime_options.drop_privileges = value
-
 
 cdef class RGBMatrix(Canvas):
     def __cinit__(self, int rows = 0, int chains = 0, int parallel = 0,
